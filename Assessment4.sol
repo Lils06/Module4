@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./Ownable.sol";
 
 contract LilsToken is ERC20 {
     address public showowner;
