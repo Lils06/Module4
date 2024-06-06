@@ -4,54 +4,58 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract LilsToken is ERC20 {
-    address public showowner;
+    address public contractOwner;
     
     struct Item {
-        uint256 itemId;
-        string itemName;
+        uint256 id;
+        string name;
     }
 
-    mapping(address => Item[]) private redeemedItems;
-    uint256 public nextItemId;
+    mapping(address => Item[]) private  playerItems;
+    uint256 private itemIdCounter;
 
     event ItemRedeemed(address indexed player, uint256 itemId, string itemName);
 
     constructor(uint256 initialSupply) ERC20("DEGEN", "DGN") {
-        showowner = msg.sender;
+        contractOwner = msg.sender;
         _mint(msg.sender, initialSupply);
-        nextItemId = 1;
+        itemIdCounter = 1;
     }
 
-    function mint(address to, uint256 amount) public {
-        require(msg.sender == showowner, "You're not the owner");
+    modifier onlyOwner() {
+        require(msg.sender == contractOwner, "Caller is not the owner");
+        _;
+    }
+
+    function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
 
-    function redeem( address account, uint256 amount, string memory itemName) public {
-        require(balanceOf(account)>=amount, "You don't have enough balance");
-        _burn(account,  amount);
+    function redeemTokens(address account, uint256 amount, string memory itemName) external {
+        require(balanceOf(account) >= amount, "Insufficient token balance");
+        _burn(account, amount);
         
         Item memory newItem = Item({
-            itemId: nextItemId,
-            itemName: itemName
+            id: itemIdCounter,
+            name: itemName
         });
         
-        redeemedItems[account].push(newItem);
-        emit ItemRedeemed(account, nextItemId, itemName);
+        playerItems[account].push(newItem);
+        emit ItemRedeemed(account, itemIdCounter, itemName);
         
-        nextItemId++;
+        itemIdCounter++;
     }
 
-    function transfer(address to, uint256 amount) public virtual override returns (bool) {
-        _transfer(_msgSender(), to, amount);
-        return true;
+    function getRedemptionHistory(address player) external view returns (Item[] memory) {
+        return playerItems[player];
     }
-    
-    function burn(uint256 amount) public {
+
+    function burnTokens(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
-    function redeemHistory(address player) public view returns (Item[] memory) {
-        return redeemedItems[player];
+    function transferTokens(address to, uint256 amount) external returns (bool) {
+        _transfer(msg.sender, to, amount);
+        return true;
     }
 }
